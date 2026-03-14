@@ -8,6 +8,7 @@ import io.hypersistence.tsid.TSID;
 import java.time.OffsetDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -45,7 +46,13 @@ public class TemperatureProcessingController {
         .registeredAt(OffsetDateTime.now())
         .build();
 
-    rabbitTemplate.convertAndSend(FANOUT_EXCHANGE_TEMPERATURE_PROCESSING_TEMPERATURE_RECEIVED_V_1_E, "", logOutput);
+    MessagePostProcessor messagePostProcessor = message -> {
+      message.getMessageProperties().setContentType("application/json");
+      message.getMessageProperties().setHeader("sensorId", sensorId.toString());
+      return message;
+    };
+    rabbitTemplate.convertAndSend(FANOUT_EXCHANGE_TEMPERATURE_PROCESSING_TEMPERATURE_RECEIVED_V_1_E, "", logOutput,
+        messagePostProcessor);
     log.info(logOutput.toString());
   }
 }
